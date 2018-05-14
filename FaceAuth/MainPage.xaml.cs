@@ -41,8 +41,8 @@ namespace FaceAuth
         DisplayRequest displayRequest = new DisplayRequest();
 
         //Register for a free Face API key and URL at https://azure.microsoft.com/en-us/try/cognitive-services/
-        static string faceApiKey = "<Enter API key here>";
-        static string faceApiUrl = "<Enter URL here>";
+        static string faceApiKey = "<Insert API key>";
+        static string faceApiUrl = "<Insert API URL>";
 
         FaceServiceClient faceServiceClient = new FaceServiceClient(faceApiKey, faceApiUrl);
 
@@ -88,32 +88,39 @@ namespace FaceAuth
                 using (Stream s = File.OpenRead(testImageFile))
                 {
                     var faces = await faceServiceClient.DetectAsync(s);
-                    var faceIds = faces.Select(face => face.FaceId).ToArray();
-
-                    try
+                    if (faces.Length > 0)
                     {
-                        var results = await faceServiceClient.IdentifyAsync(txtBoxPersonGroupId.Text, faceIds);
+                        var faceIds = faces.Select(face => face.FaceId).ToArray();
 
-                        foreach (var identifyResult in results)
+                        try
                         {
-                            Debug.WriteLine("Result of face: {0}", identifyResult.FaceId);
-                            if (identifyResult.Candidates.Length == 0)
+                            var results = await faceServiceClient.IdentifyAsync(txtBoxPersonGroupId.Text, faceIds);
+
+                            foreach (var identifyResult in results)
                             {
-                                LogMessage("No one identified");
-                            }
-                            else
-                            {
-                                // Get top 1 among all candidates returned
-                                var candidateId = identifyResult.Candidates[0].PersonId;
-                                var person = await faceServiceClient.GetPersonAsync(txtBoxPersonGroupId.Text, candidateId);
-                                LogMessage($"Identified as: {person.Name}");
+                                Debug.WriteLine("Result of face: {0}", identifyResult.FaceId);
+                                if (identifyResult.Candidates.Length == 0)
+                                {
+                                    LogMessage("No one identified");
+                                }
+                                else
+                                {
+                                    // Get top 1 among all candidates returned
+                                    var candidateId = identifyResult.Candidates[0].PersonId;
+                                    var person = await faceServiceClient.GetPersonAsync(txtBoxPersonGroupId.Text, candidateId);
+                                    LogMessage($"Identified as: {person.Name}");
+                                }
                             }
                         }
+                        catch (Exception error)
+                        {
+                            LogMessage($"{error.Message}");
+                            return;
+                        }
                     }
-                    catch (Exception error)
+                    else
                     {
-                        LogMessage($"{error.Message}");
-                        return;
+                        LogMessage("No face identified. Please try again.");
                     }
                 }
             }
